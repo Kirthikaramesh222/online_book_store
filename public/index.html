@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Online Book Store</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+  <header>
+    <h1>Online Book Store</h1>
+  </header>
+
+  <main class="container">
+    <div class="row">
+      <aside class="sidebar card">
+        <h3>Filters</h3>
+        <div id="filter-container" class="search">
+          <input id="query" type="search" placeholder="Search title or author" />
+          <button id="searchBtn" class="btn secondary">Go</button>
+        </div>
+
+        <div style="margin-top:8px">
+          <label class="muted">Category</label>
+          <select id="categoryFilter" style="width:100%;margin-top:6px">
+            <option value="">All</option>
+          </select>
+        </div>
+
+        <div style="margin-top:12px">
+          <label class="muted">Sort by</label>
+          <select id="sortBy" style="width:100%;margin-top:6px">
+            <option value="popular">Popular</option>
+            <option value="price-asc">Price: Low → High</option>
+            <option value="price-desc">Price: High → Low</option>
+            <option value="newest">Newest</option>
+          </select>
+        </div>
+      </aside>
+
+      <section class="main">
+        <div class="card" style="margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="font-size:18px;font-weight:700">Browse Books</div>
+            <div class="spacer"></div>
+            <div class="muted">Showing <span id="resultCount">0</span> books</div>
+          </div>
+        </div>
+
+        <div id="booksGrid" class="books-grid"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div>Developed by kirthika</div>
+  </footer>
+
+  <script src="./script.js"></script>
+</body>
+
+</html>
