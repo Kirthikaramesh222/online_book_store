@@ -1,11 +1,37 @@
 import express from 'express';
 import { MongoClient } from "mongodb";
 import dotenv from 'dotenv'
+import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
+import { GetCommand } from '@aws-sdk/lib-dynamodb';
 
 dotenv.config()
 
 const DB_NAME = process.env.DB_DATABASE_NAME ?? "online_book_store";
 const DB_COLLECTION_NAME = process.env.DB_COLLECTION_NAME ?? "books";
+if (!process.env.AWS_SECRET_KEY && !process.env.AWS_ACCESS_KEY) {
+  throw new Error("failed to setup AWS related config")
+}
+
+const clientDynamo = new DynamoDBClient({
+  region: "sa-south-1",
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY,
+    secretAccessKey: process.env.AWS_SECRET_KEY
+  }
+});
+
+async function getBooksFromDynamo() {
+  const cmd = new GetCommand({
+    TableName: "books",
+  });
+
+  const result = await clientDynamo.send(cmd)
+
+  console.log(result.Item);
+}
+
+getBooksFromDynamo();
+
 
 const app = express();
 
