@@ -1,8 +1,11 @@
+const s3BucketUrl = "https://tkt-online-bookstore.s3.ap-south-1.amazonaws.com"
+
 async function main() {
     const response = await fetch('/books')
 
     if (!response.ok) throw new Error("failed to get the books")
-    const data = await response.json();
+    const json = await response.json();
+    const data = json.Items
     return data
 }
 
@@ -10,7 +13,7 @@ const $ = id => document.getElementById(id);
 const formatPrice = v => 'LKR ' + v.toLocaleString();
 
 function renderCategoryOptions(list) {
-    const cats = Array.from(new Set(list.map(b => b.category))).sort();
+    const cats = Array.from(new Set(list.map(b => b.category.S))).sort();
     const sel = $('categoryFilter');
     cats.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; sel.appendChild(opt); });
 }
@@ -21,9 +24,9 @@ function renderBooks(list) {
     list.forEach(b => {
         const el = document.createElement('div'); el.className = 'card book';
         el.innerHTML = `
-    <div class="cover book" style="background-image: url('images/${escapeHtml(b.image)}')">${escapeHtml(b.genre[0])}</div>
-      <div class="title">${escapeHtml(b.title)}</div>
-      <div class="muted">${escapeHtml(b.author)} • ${b.published_year}</div>
+    <div class="cover book" style="background-image: url('${s3BucketUrl}/${escapeHtml(b.image.S)}')"></div>
+      <div class="title">${escapeHtml(b.title.S)}</div>
+      <div class="muted">${escapeHtml(b.author.S)} • ${b.published_year.S}</div>
     </div>
       </div>
     </div>
@@ -48,16 +51,6 @@ function applyFilters(books) {
     else results.sort((a, b) => b.title.localeCompare(a.title));
     renderBooks(results);
 }
-
-function viewDetails(id) {
-    const b = BOOKS.find(x => x.id === id);
-    if (!b) return alert('Not found');
-    const html = `
-  ${b.title}\nAuthor: ${b.author}\nCategory: ${b.category}\nYear: ${b.year}\nPrice: ${formatPrice(b.price)}\n\n${b.desc}
-`;
-    if (confirm(html + '\n\nAdd to cart?')) addToCart(id);
-}
-
 
 function openCartModal() {
     $('cartModal').style.display = 'flex';
@@ -144,5 +137,3 @@ main()
     .catch(err => {
         console.error(err)
     })
-
-window.viewDetails = viewDetails;

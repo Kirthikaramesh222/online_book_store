@@ -1,48 +1,25 @@
 import express from 'express';
-import { MongoClient } from "mongodb";
 import dotenv from 'dotenv'
 import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
-import { GetCommand } from '@aws-sdk/lib-dynamodb';
 
 dotenv.config()
 
-const DB_NAME = process.env.DB_DATABASE_NAME ?? "online_book_store";
-const DB_COLLECTION_NAME = process.env.DB_COLLECTION_NAME ?? "books";
 if (!process.env.AWS_SECRET_KEY && !process.env.AWS_ACCESS_KEY) {
   throw new Error("failed to setup AWS related config")
 }
 
 const clientDynamo = new DynamoDBClient({
-  region: "sa-south-1",
+  region: "ap-south-1",
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY,
     secretAccessKey: process.env.AWS_SECRET_KEY
   }
 });
 
-async function getBooksFromDynamo() {
-  const cmd = new GetCommand({
-    TableName: "books",
-  });
-
-  const result = await clientDynamo.send(cmd)
-
-  console.log(result.Item);
-}
-
-getBooksFromDynamo();
-
-
 const app = express();
 
 app.use(express.static('public'));
 
-const client = new MongoClient("mongodb://localhost:27017");
-await client.connect();
-const db = client.db(DB_NAME);
-const messages = db.collection(DB_COLLECTION_NAME);
-
-// filtering using title
 // books?title=titanic
 // books?category=fantasy
 app.get('/books', async (req, res) => {
@@ -50,16 +27,31 @@ app.get('/books', async (req, res) => {
   const category = req.query.category;
 
   if (!title && !category) {
-    const all = await messages.find().limit(10).toArray();
+    const cmd = new ScanCommand({
+      TableName: "books",
+    });
+
+    const all = await clientDynamo.send(cmd)
     res.json(all);
     return
   }
 
   // prioritize title filter
   if (title) {
-    const titleFilter = await messages.find({
-      title: { $regex: title, $options: "i" }
-    }).limit(5).toArray();
+    const cmd = new ScanCommand({
+      TableName: "books",
+      FilterExpression: "contains(#title, :titleVal)",
+      ExpressionAttributeNames: {
+        "#title": "title",
+      },
+      ExpressionAttributeValues: {
+        ":titleVal": title,
+      },
+      Limit: 10
+    });
+
+    const json = await clientDynamo(cmd)
+    const titleFilter = json.Items
 
     if (titleFilter.length == 0) {
       res.status(404).json({
@@ -75,9 +67,20 @@ app.get('/books', async (req, res) => {
   }
 
   if (category) {
-    const categoryFilter = await messages.find({
-      category: { $regex: category, $options: "i" }
-    }).limit(5).toArray();
+    const cmd = new ScanCommand({
+      TableName: "messages",
+      FilterExpression: "contains(#category, :catVal)",
+      ExpressionAttributeNames: {
+        "#category": "category",
+      },
+      ExpressionAttributeValues: {
+        ":catVal": category,
+      },
+      Limit: 5, // same as .limit(5)
+    });
+
+    const json = await clientDynamo.send(cmd);
+    const categoryFilter = json.Items;
 
     if (categoryFilter.length == 0) {
       res.status(404).json({
@@ -96,6 +99,5 @@ app.get('/books', async (req, res) => {
     message: "Bad Request",
   });
 });
-
 
 app.listen(3001, () => console.log("API running on http://localhost:3001"));
